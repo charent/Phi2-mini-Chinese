@@ -39,9 +39,9 @@ CLM预训练过程中，模型输入和输出是一样的，计算交叉熵损�
 
 主要使用`bell open source`的数据集。感谢大佬[BELLE](https://github.com/LianjiaTech/BELLE)。  
 
-预训练的数据格式如下：  
+SFT训练的数据格式如下：  
 ```python
-text = f"##提问:{example['instruction']} ##回答:{example['output'][EOS]"
+text = f"##提问:\n{example['instruction']}\n##回答:\n{example['output'][EOS]"
 ```
 模型计算损失时会忽略标记`"##回答:"`之前的部分（`"##回答:"`也会被忽略），从`"##回答:"`后面开始。
 
