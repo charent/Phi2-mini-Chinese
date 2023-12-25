@@ -61,9 +61,10 @@ DPO过程中要有两个模型，一个是要训练的模型，一个是参考�
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
 import torch
 
-tokenizer = AutoTokenizer.from_pretrained('charent/Phi2-Chinese-0.2B')
-model = AutoModelForCausalLM.from_pretrained('charent/Phi2-Chinese-0.2B')
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+tokenizer = AutoTokenizer.from_pretrained('charent/Phi2-Chinese-0.2B')
+model = AutoModelForCausalLM.from_pretrained('charent/Phi2-Chinese-0.2B').to(device)
 
 txt = '感冒了要怎么办？'
 prompt = f"##提问:\n{txt}\n##回答:\n"
