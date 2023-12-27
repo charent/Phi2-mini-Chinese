@@ -25,7 +25,7 @@ tokenizer训练非常吃内存：
 # 3. ⛏️CLM因果模型预训练
 代码：[pretrain.ipynb](./2.pretrain.ipynb)   
 
-用大量文本进行无监督预训练，我这里除了基本的数据集外，还加入`wiki`百科的数据。  
+用大量文本进行无监督预训练，主要使用`bell open source`的数据集[BELLE](https://github.com/LianjiaTech/BELLE)。  
 
 数据集格式：一个样本一句话，太长的可以截断分为多个样本。  
 
