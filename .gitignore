@@ -2,7 +2,7 @@ data
 *cache
 model_save
 logs
-
+.vscode
 
 
 # Byte-compiled / optimized / DLL files
