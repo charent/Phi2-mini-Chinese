@@ -117,7 +117,7 @@ phi_config = PhiConfig(
     num_attention_heads=12,
     num_hidden_layers=24,
     max_position_embeddings=512,
-    intermediate_size=4096,
+    intermediate_size=5120,
 )
 
 model = PhiForCausalLM(phi_config)
