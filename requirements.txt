@@ -1,4 +1,6 @@
 datasets==2.15.0
+evaluate==0.4.1
+numpy==1.26.2
 pandas==2.1.4
 pyarrow==14.0.1
 rich==13.7.0

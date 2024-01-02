@@ -2,6 +2,7 @@
 from transformers import PreTrainedTokenizerFast, DataCollatorForLanguageModeling, PhiConfig, PhiForCausalLM, Trainer, TrainingArguments, TrainerCallback
 from datasets import load_dataset
 import pandas as pd
+import numpy as np
 import time
 import torch
 
@@ -142,6 +143,9 @@ empty_cuda_cahce = EmptyCudaCacheCallback()
 # %% [markdown]
 # # 6. 定义训练参数
 
+# %% 
+my_datasets =  tokenized_datasets.train_test_split(test_size=4096)
+
 # %%
 args = TrainingArguments(
     output_dir=model_save_dir,
@@ -151,6 +155,8 @@ args = TrainingArguments(
     weight_decay=0.1,
     warmup_steps=1000,
     learning_rate=5e-4,
+    evaluation_strategy='steps',
+    eval_steps=2000,
     save_steps=2000,
     save_total_limit=3,
     report_to='tensorboard',
@@ -167,7 +173,8 @@ trainer = Trainer(
     tokenizer=tokenizer,
     args=args,
     data_collator=data_collator,
-    train_dataset=tokenized_datasets,
+    train_dataset=my_datasets['train'],
+    eval_dataset=my_datasets['test'],
     callbacks=[empty_cuda_cahce],
 )
 
@@ -181,7 +188,11 @@ trainer.train(
 )
 
 # %% [markdown]
-# 
+#  计算困惑度Perplexity 
+
+# %%
+eval_results = trainer.evaluate()
+print(f"Perplexity: {np.exp(eval_results['eval_loss']):.2f}")
 
 # %% [markdown]
 # # 8. 最后保存训练的loss日志和模型
