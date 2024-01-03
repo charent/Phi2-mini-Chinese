@@ -4,7 +4,7 @@
 
 # 1. ⚗️数据清洗
 代码：[dataset.ipynb](./0.dataset.ipynb)。  
-比如句末添加句号、繁体转简体、全角转半角、删除重复的标点符号（比如有些对话语料非常多`"。。。。。"`）等等。   
+比如句末添加句号、繁体转简体、删除重复的标点符号（比如有些对话语料非常多`"。。。。。"`）、NFKC Unicode标准化（主要是全角转半角及网页数据的\u3000 \xa0问题）等等。   
 具体的数据清洗过程请参考项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese)。  
 
 # 2. 🗨️tokenizer训练 
@@ -31,7 +31,7 @@ tokenizer训练非常吃内存：
 
 CLM预训练过程中，模型输入和输出是一样的，计算交叉熵损失的时候，要错开一位（`shift`）。  
 
-预训练时可以不添加`EOS`、`BOS`等特殊标记。  
+处理百科语料时，建议在每个词条结束后加上`'[EOS]'`标记。其他语料处理也类似，一个`doc`的结束（可以时一篇文章结束或者段落结束）都要加上`'[EOS]'`标记。开始标记`'[BOS]'`可加可不加。
 
 
 # 4. ⚒️SFT指令微调 
@@ -48,7 +48,10 @@ text = f"##提问:\n{example['instruction']}\n##回答:\n{example['output'][EOS]
 记得添加`EOS`句子结束特殊标记，否则模型`decode`的时候不知道要什么时候停下来。`BOS`句子开始标记可填可不填。
 
 
-# 5. 📝dpo偏好优化
+# 5. 📝RLHF优化
+
+采用更简单、更节省显存的dpo偏好优化方法。  
+
 代码：[dpo.ipynb](./4.dpo.ipynb)   
 
 根据个人喜好对SFT模型微调，数据集要构造三列`prompt`、`chosen`和 `rejected`，`rejected`这一列有部分数据我是从sft阶段初级模型（比如sft训练4个`epoch`，取0.5个`epoch`检查点的模型）生成，如果生成的`rejected`和`chosen`相似度在0.9以上，则不要这条数据。  
