@@ -1,8 +1,9 @@
 # %%
 import os, platform, time
+from typing import Optional
 
 from transformers import PreTrainedTokenizerFast, DataCollatorForLanguageModeling, PhiConfig, PhiForCausalLM, Trainer, TrainingArguments, TrainerCallback
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 import pandas as pd
 from transformers.trainer_callback import TrainerControl, TrainerState
 import numpy as np
@@ -23,16 +24,11 @@ except Exception as e:
 # # 1. 训练数据来源
 
 TRAIN_FILES = [
-    # './data/baike_chunk_320_5.6M_0.parquet',
-    # './data/baike_chunk_320_5.6M_1.parquet',
-    # './data/baike_chunk_320_5.6M_2.parquet',
-    # './data/baike_chunk_320_5.6M_3.parquet',
-    # './data/baike_chunk_320_5.6M_4.parquet',
-    # './data/baike_chunk_320_5.6M_5.parquet',
     './data/wiki_chunk_320_2.2M.parquet', 
-    './data/bell_pretrain_3M.parquet',
+    './data/bell_pretrain_400_3M.parquet',
 ]
 
+EVAL_FILE = './data/pretrain_eval_400_1w.parquet'
 
 # %%
 
@@ -42,6 +38,7 @@ class PretrainArguments:
     model_save_dir: str = './model_save/pre/'
     logs_dir: str = './logs/'
     train_files: list[str] = field(default_factory=lambda: TRAIN_FILES)
+    eval_file: str = EVAL_FILE
     max_seq_len: int = 512
 
     # Windows 使用默认的attention实现，
@@ -69,19 +66,6 @@ if vocab_size % 64 != 0:
 print(f"final vocab sieze: {vocab_size}")
 
 # %% [markdown]
-# # 3. 加载数据集
-
-# %%
-dataset = load_dataset(path='parquet', data_files=pretrain_args.train_files, split='train', cache_dir='.cache')
-
-# %%
-dataset
-
-# %%
-# samples = dataset['text'][0:5]
-# print(samples)
-
-# %% [markdown]
 # ## token to id缓存到文件，使用的时候不用再次tokenize
 # 如果词表大小小于 65535 用uint16存储，节省磁盘空间，否则用uint32存储
 # %%
@@ -105,14 +89,18 @@ def token_to_id(samples: dict[str, list]) -> dict:
 
 # print(token_to_id({'text':['判断给定的文章是否符合语法规则。如果不符合，请提供修改建议。\n','下面是一篇文章的开头: "为了探讨这个主题，本文将提供一系列数据和实例，以证明这一观点。']}))
 
+# step 3 加载数据集
 
 # %%
+def get_maped_dataset(files: str|list[str]) -> Dataset:
+    dataset = load_dataset(path='parquet', data_files=files, split='train', cache_dir='.cache')
+    maped_dataset = dataset.map(token_to_id, batched=True, batch_size=1_0000, remove_columns=dataset.column_names)
+    return maped_dataset
 
-tokenized_datasets = dataset.map(
-    token_to_id, batched=True, batch_size=1_0000, remove_columns=dataset.column_names
-)
-tokenized_datasets
+train_dataset = get_maped_dataset(pretrain_args.train_files)
+eval_dataset = get_maped_dataset(pretrain_args.eval_file)
 
+print(train_dataset, eval_dataset)
 # %% [markdown]
 # # 4. 定义data_collator
 # `mlm=False`表示要训练CLM模型，`mlm=True`表示要训练MLM模型
@@ -195,9 +183,6 @@ my_trainer_callback = MyTrainerCallback()
 # %% [markdown]
 # # 6. 定义训练参数
 
-# %% 
-my_datasets =  tokenized_datasets.train_test_split(test_size=4096)
-
 # %%
 args = TrainingArguments(
     output_dir=pretrain_args.model_save_dir,
@@ -227,8 +212,8 @@ trainer = Trainer(
     tokenizer=tokenizer,
     args=args,
     data_collator=data_collator,
-    train_dataset=my_datasets['train'],
-    eval_dataset=my_datasets['test'],
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset,
     callbacks=[my_trainer_callback],
 )
 
