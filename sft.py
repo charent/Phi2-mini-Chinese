@@ -97,6 +97,9 @@ response_template = "##回答:"
 #         return super().__call__(data, return_tensors)
 
 # %%
+
+map_dtype = np.uint16 if len(tokenizer) < 65535 else np.uint32
+
 def batched_formatting_prompts_func(example: list[dict]) -> list[str]:
     batch_txt = []
     for i in range(len(example['instruction'])):
@@ -104,9 +107,12 @@ def batched_formatting_prompts_func(example: list[dict]) -> list[str]:
         batch_txt.append(text)
 
     # token to id 
-    input_ids = tokenizer(batch_txt, return_attention_mask=False)['input_ids']
+    outputs = tokenizer(batch_txt, return_attention_mask=False)
+    input_ids = [np.array(item, dtype=map_dtype) for item in outputs["input_ids"]]
 
-    return {'input_ids': input_ids}
+    return {
+            "input_ids": input_ids
+        }
 
 # print(batched_formatting_prompts_func(samples))
 
@@ -169,6 +175,7 @@ args = TrainingArguments(
     logging_steps=10,
     log_level='info',
     logging_first_step=True,
+    group_by_length=True,
 )
 trainer = Trainer(
     model=model,

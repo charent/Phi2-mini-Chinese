@@ -101,6 +101,7 @@ args = TrainingArguments(
     logging_first_step=True,
     optim="adafactor",
     remove_unused_columns=False,
+    group_by_length=True,
 )
 
 trainer = DPOTrainer(

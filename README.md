@@ -2,6 +2,8 @@
 
 **本项目为实验项目，开源代码及模型权重，预训练数据较少，如果需要效果更好的中文小模型，可以参考项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese)**
 
+- 支持flash attention 2 加速
+
 # 1. ⚗️数据清洗
 代码：[dataset.ipynb](./0.dataset.ipynb)。  
 比如句末添加句号、繁体转简体、删除重复的标点符号（比如有些对话语料非常多`"。。。。。"`）、NFKC Unicode标准化（主要是全角转半角及网页数据的\u3000 \xa0问题）等等。   
