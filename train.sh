@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 accelerate launch --multi_gpu --num_processes 2 --config_file accelerate_multi_gpu.yaml $1  
 # accelerate launch $1
 
