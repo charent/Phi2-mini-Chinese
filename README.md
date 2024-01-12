@@ -5,7 +5,6 @@
 - 支持flash attention 2 加速
 
 # 1. ⚗️数据清洗
-代码：[dataset.ipynb](./0.dataset.ipynb)。  
 比如句末添加句号、繁体转简体、删除重复的标点符号（比如有些对话语料非常多`"。。。。。"`）、NFKC Unicode标准化（主要是全角转半角及网页数据的\u3000 \xa0问题）等等。   
 具体的数据清洗过程请参考项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese)。  
 
@@ -24,8 +23,7 @@ tokenizer训练非常吃内存：
 所以大数据集时（GB级别），建议训练`tokenizer`时从数据集中进行采样。  
 
 
-# 3. ⛏️CLM因果模型预训练
-代码：[pretrain.ipynb](./2.pretrain.ipynb)   
+# 3. ⛏️CLM因果模型预训练 
 
 用大量文本进行无监督预训练，主要使用`bell open source`的数据集[BELLE](https://github.com/LianjiaTech/BELLE)。  
 
@@ -37,7 +35,6 @@ CLM预训练过程中，模型输入和输出是一样的，计算交叉熵损�
 
 
 # 4. ⚒️SFT指令微调 
-代码：[sft.ipynb](./3.sft.ipynb)   
 
 主要使用`bell open source`的数据集。感谢大佬[BELLE](https://github.com/LianjiaTech/BELLE)。  
 
@@ -60,7 +57,10 @@ text = f"##提问:\n{example['instruction']}\n##回答:\n{example['output'][EOS]
 
 DPO过程中要有两个模型，一个是要训练的模型，一个是参考的模型，在加载的时候其实是同一个模型，只不过参考模型不参与参数更新。  
 
+
+
 # 6. 📑本项目模型使用方法
+## 6.1 普通对话能力
 模型权重`huggingface`仓库：[Phi2-Chinese-0.2B](https://huggingface.co/charent/Phi2-Chinese-0.2B)  
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
@@ -113,6 +113,11 @@ print(outs)
 - 如果您已经感冒了，可以喝一些温水或盐水来补充体液。
 - 另外，如果感冒了，建议及时就医。
 ```
+
+## 6.2 检索式生成（RAG）
+具体代码见`rag_with_langchain.ipynb`
+
+![rag](./imgs/rag.png)
 
 
 # 7、🎓引用
