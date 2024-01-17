@@ -63,8 +63,8 @@ tokenizer = PreTrainedTokenizerFast.from_pretrained(pretrain_args.tokenizer_dir)
 vocab_size = len(tokenizer)
 if vocab_size % 64 != 0:
     vocab_size = (vocab_size // 64 + 1) * 64
-print(f"final vocab sieze: {vocab_size}")
-
+print(f"source vocab size: {len(tokenizer)}, final vocab sieze: {vocab_size}")
+ 
 # %% [markdown]
 # ## token to id缓存到文件，使用的时候不用再次tokenize
 # 如果词表大小小于 65535 用uint16存储，节省磁盘空间，否则用uint32存储
@@ -139,7 +139,7 @@ phi_config = PhiConfig(
     eos_token_id=tokenizer.eos_token_id,
     hidden_size=960,
     num_attention_heads=16,
-    num_hidden_layers=22,
+    num_hidden_layers=24,
     max_position_embeddings=512,
     intermediate_size=4096,
     attn_implementation=pretrain_args.attn_implementation,
@@ -154,7 +154,6 @@ model = PhiForCausalLM(phi_config)
 
 model_size = sum(t.numel() for t in model.parameters())
 print(f"Phi-2 size: {model_size / 1000**2:.1f}M parameters")
-
 # %% [markdown]
 # # 6. cuda cache回调函数
 
