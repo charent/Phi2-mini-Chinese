@@ -2,6 +2,10 @@
 
 **本项目为实验项目，开源代码及模型权重，预训练数据较少，如果需要效果更好的中文小模型，可以参考项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese)**
 
+> [!CAUTION]
+> 本项目为实验性项目，随时会大改，包括训练数据、模型结构、文件目录结构等。
+> 第一版模型及请查看`tag v1.0`
+
 - 支持flash attention 2 加速
 
 # 1. ⚗️数据清洗

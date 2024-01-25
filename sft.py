@@ -37,64 +37,13 @@ print(f"vicab size: {len(tokenizer)}")
 
 # %% [markdown]
 # ## 2.1 定义sft data_collator的指令字符
-# 注释掉的这段代码是手动将`instruction_template_ids`和`response_template_ids`添加到input_ids中的，因为如果是byte level tokenizer可能将`:`和后面的字符合并，导致找不到`instruction_template_ids`和`response_template_ids`。 
-# 
+# 也可以手动将`instruction_template_ids`和`response_template_ids`添加到input_ids中的，因为如果是byte level tokenizer可能将`:`和后面的字符合并，导致找不到`instruction_template_ids`和`response_template_ids`。 
 # 也可以像下文一样通过在`'#'`和`':'`前后手动加`'\n'`解决
 
 # %%
 instruction_template = "##提问:"
 response_template = "##回答:"
 
-# %%
-# 注释掉的这段代码是手动将`instruction_template_ids`和`response_template_ids`添加到input_ids中
-
-# template_ids = tokenizer([instruction_template, response_template])['input_ids']
-# instruction_template_ids, response_template_ids = template_ids[0], template_ids[1]
-# print(instruction_template_ids, response_template_ids)
-# def formatting_prompts_func(example: list[dict]) -> list[str]:
-#     batch_prompt,  batch_response = [], []
-#     n = len(example['instruction'])
-#     for i in range(n):
-#         batch_prompt.append(example['instruction'][i])
-#         batch_response.append(example['output'][i])
-        
-#     prompt_ids = tokenizer(batch_prompt, return_attention_mask=False)['input_ids']
-#     resopnse_ids = tokenizer(batch_response, return_attention_mask=False)['input_ids']
-
-#     input_ids = []
-#     for i in range(n):
-#         cur_input_ids = [tokenizer.bos_token_id] + instruction_template_ids + prompt_ids[i] \
-#                         + response_template_ids + resopnse_ids[i] + [tokenizer.eos_token_id]
-#         input_ids.append(cur_input_ids)
-    
-#     return {'input_ids': input_ids}
-
-# from typing import List, Union
-
-
-# class Phi2DataCollatorForCompletionOnlyLM(DataCollatorForCompletionOnlyLM):
-#     def __init__(self, response_template: str | List[int], instruction_template: str | List[int] = None, *args, mlm: bool = False, ignore_index: int = -100, **kwargs):
-#         super().__init__(response_template, instruction_template, *args, mlm=mlm, ignore_index=ignore_index, **kwargs)
-    
-#     def __call__(self, features, return_tensors=None):
-#         '''
-#         执行formatting_prompts_func map后，dataset的__getitem__方法返回的是batch_size个input_ids
-#         '''
-#         batch_size = len(features)
-#         paded_input_ids = tokenizer.pad(
-#             {'input_ids': features['input_ids']},
-#             padding=True,
-#             return_attention_mask=False,
-#         )['input_ids']
-
-#         data = []
-#         for i in range(batch_size):
-#             data.append(
-#                 {'input_ids': }
-#             )
-
-#         # 最后让父类执行LM mask即可
-#         return super().__call__(data, return_tensors)
 
 # %%
 

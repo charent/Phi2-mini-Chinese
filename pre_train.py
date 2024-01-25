@@ -87,7 +87,6 @@ def token_to_id(samples: dict[str, list]) -> dict:
             "input_ids": input_ids
         }
 
-# print(token_to_id({'text':['判断给定的文章是否符合语法规则。如果不符合，请提供修改建议。\n','下面是一篇文章的开头: "为了探讨这个主题，本文将提供一系列数据和实例，以证明这一观点。']}))
 
 # step 3 加载数据集
 
@@ -107,23 +106,6 @@ print(train_dataset, eval_dataset)
 
 # %%
 data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
-
-# %%
-# few_data = [tokenized_datasets[i] for i in range(5)]
-# print(few_data)
-
-# %% [markdown]
-# ##  验证一下数据看padding、输入输出是否符合要求
-
-# %%
-# out = data_collator(few_data)
-# print(out.keys())
-# for key in out:
-#     # print(out[key])
-#     print(f"{key} shape: {out[key].shape}")
-
-# # input_ids 和 labels 相同
-# sum(out['input_ids'][0] == out['labels'][0]) == sum(out['attention_mask'][0])
 
 # %%
 # 如果配置了flash_attention_2，请手动设置set_default_dtype为float16
