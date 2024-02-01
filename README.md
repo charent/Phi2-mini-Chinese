@@ -13,7 +13,6 @@
 具体的数据清洗过程请参考项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese)。  
 
 # 2. 🗨️tokenizer训练 
-代码：[tokeinzer.ipynb](./1.tokeinzer.ipynb)
 本项目使用`byte level`的`BPE`分词器。共提供的两种分词器`char level` 和`byte level`的训练代码。  
 
 训练完的tokenizer记得检查词表中是否有常见的特殊符号，如`\t`、`\n`等，可以尝试编一句包含特殊字符的文本`encode`、`decode`看看能不能还原。如果不包含这些特殊字符，通过`add_tokens`函数添加。使用`len(tokenizer)`获取词表大小，`tokenizer.vocab_size`不统计自己通过`add_tokens`函数添加的字符。     
@@ -54,8 +53,6 @@ text = f"##提问:\n{example['instruction']}\n##回答:\n{example['output'][EOS]
 # 5. 📝RLHF优化
 
 采用更简单、更节省显存的dpo偏好优化方法。  
-
-代码：[dpo.ipynb](./4.dpo.ipynb)   
 
 根据个人喜好对SFT模型微调，数据集要构造三列`prompt`、`chosen`和 `rejected`，`rejected`这一列有部分数据我是从sft阶段初级模型（比如sft训练4个`epoch`，取0.5个`epoch`检查点的模型）生成，如果生成的`rejected`和`chosen`相似度在0.9以上，则不要这条数据。  
 
