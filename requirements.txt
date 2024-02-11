@@ -12,6 +12,6 @@ sentence_transformers>=2.2.2
 tensorboardX>=2.6.2.2pi
 tokenizers>=0.15.0
 torch>=2.1.1
-transformers==4.36.2
+transformers==4.37.2
 trl>=0.7.6
 ujson>=5.8.0

@@ -11,6 +11,9 @@
 # 1. ⚗️数据清洗
 比如句末添加句号、繁体转简体、删除重复的标点符号（比如有些对话语料非常多`"。。。。。"`）、NFKC Unicode标准化（主要是全角转半角及网页数据的\u3000 \xa0问题）等等。   
 具体的数据清洗过程请参考项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese)。  
+```bash
+python dataset_prepare/drop_duplicate.py
+```
 
 # 2. 🗨️tokenizer训练 
 本项目使用`byte level`的`BPE`分词器。共提供的两种分词器`char level` 和`byte level`的训练代码。  
@@ -24,7 +27,9 @@ tokenizer训练非常吃内存：
 - `char level`训练6.5亿个字符（刚好是中文wiki百科的数据量）至少需要32G内存，因为多次触发了swap，实际使用量远不止32G，`13600K`训练时长约半个小时。   
 
 所以大数据集时（GB级别），建议训练`tokenizer`时从数据集中进行采样。  
-
+```bash
+# 代码见 train_tokenizer/tokeinzer.ipynb
+```
 
 # 3. ⛏️CLM因果模型预训练 
 
@@ -35,6 +40,14 @@ tokenizer训练非常吃内存：
 CLM预训练过程中，模型输入和输出是一样的，计算交叉熵损失的时候，要错开一位（`shift`）。  
 
 处理百科语料时，建议在每个词条结束后加上`'[EOS]'`标记。其他语料处理也类似，一个`doc`的结束（可以时一篇文章结束或者段落结束）都要加上`'[EOS]'`标记。开始标记`'[BOS]'`可加可不加。
+```bash
+# 请根据自己的情况编辑脚本参数
+# win
+pretrain.bat
+
+# linux
+pretrain.sh
+```
 
 
 # 4. ⚒️SFT指令微调 
@@ -48,16 +61,31 @@ text = f"##提问:\n{example['instruction']}\n##回答:\n{example['output'][EOS]
 模型计算损失时会忽略标记`"##回答:"`之前的部分（`"##回答:"`也会被忽略），从`"##回答:"`后面开始。
 
 记得添加`EOS`句子结束特殊标记，否则模型`decode`的时候不知道要什么时候停下来。`BOS`句子开始标记可填可不填。
+```bash
+# 请根据自己的情况编辑脚本参数
+# win
+sft_train.bat
+
+# linux
+sft_train.sh
+```
 
 
-# 5. 📝RLHF优化
+# 5. 📝DPO优化
 
 采用更简单、更节省显存的dpo偏好优化方法。  
 
 根据个人喜好对SFT模型微调，数据集要构造三列`prompt`、`chosen`和 `rejected`，`rejected`这一列有部分数据我是从sft阶段初级模型（比如sft训练4个`epoch`，取0.5个`epoch`检查点的模型）生成，如果生成的`rejected`和`chosen`相似度在0.9以上，则不要这条数据。  
 
 DPO过程中要有两个模型，一个是要训练的模型，一个是参考的模型，在加载的时候其实是同一个模型，只不过参考模型不参与参数更新。  
+```bash
+# 请根据自己的情况编辑脚本参数
+# win
+dpo_train.bat
 
+# linux
+dpo_train.sh
+```
 
 
 # 6. 📑本项目模型使用方法

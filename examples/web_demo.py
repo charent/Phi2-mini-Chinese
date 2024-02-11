@@ -1,8 +1,10 @@
 import gradio as gr
-from transformers import PhiForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer
 from transformers import  GenerationConfig, TextIteratorStreamer
 from threading import Thread
 import torch
+
+from model.modeling_phi import PhiPreTrainedModel
 
 tokenizer_dir = './model_save/tokenizer/'
 model_save_dir = './model_save/dpo/'
