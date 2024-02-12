@@ -114,12 +114,13 @@ def pre_train(config: MyTrainArugment):
         vocab_size=vocab_size,
         bos_token_id=tokenizer.bos_token_id,
         eos_token_id=tokenizer.eos_token_id,
-        hidden_size=960,
+        hidden_size=1024,
         num_attention_heads=16,
         num_hidden_layers=24,
         max_position_embeddings=768,
         intermediate_size=4096,
         attn_implementation=attn_implementation,
+        tie_word_embeddings=False,
     )
 
     model = PhiForCausalLM(phi_config)
@@ -133,7 +134,7 @@ def pre_train(config: MyTrainArugment):
     print(f"Phi-2 size: {model_size / 1000**2:.1f}M parameters")
 
     # # 3. cuda cache回调函数
-    my_trainer_callback = MyTrainerCallback()
+    # my_trainer_callback = MyTrainerCallback()
 
     # # 4. 定义训练参数
     args = TrainingArguments(
@@ -167,7 +168,7 @@ def pre_train(config: MyTrainArugment):
         data_collator=data_collator,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        callbacks=[my_trainer_callback],
+        # callbacks=[my_trainer_callback],
     )
 
     # 5. 开始训练
