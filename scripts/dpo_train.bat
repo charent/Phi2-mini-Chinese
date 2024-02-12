@@ -1,5 +1,5 @@
 @echo off
-
+cd ..
 accelerate launch ^
     --config_file accelerate_one_gpu.yaml ^
     train_main.py ^

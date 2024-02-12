@@ -29,6 +29,25 @@ class MyTrainerCallback(TrainerCallback):
 # 保留中文和英文、下划线，不要标点符号
 NON_CHAR = re.compile("[^[\u4E00-\u9FA5|A-Za-z_0-9]")
 
+
+def get_doc_mini_hash(args: tuple, n_gram: int=3) -> MinHash:
+    '''
+    获取一段文本的mini hash
+    '''
+
+    index, doc, num_perm = args
+    # 删除符号
+    doc = ''.join(NON_CHAR.split(doc))
+
+    # n元组切分
+    docs = [doc[i: i + n_gram] for i in range(0, len(doc))]
+
+    mini_hash = MinHash(num_perm=num_perm)
+    for s in docs:
+        mini_hash.update(s.encode('utf-8'))
+    return index, mini_hash
+
+
 def _get_doc_mini_hash(doc: list[str] | str, num_perm: int) -> MinHash:
     '''
     获取一段文本的mini hash

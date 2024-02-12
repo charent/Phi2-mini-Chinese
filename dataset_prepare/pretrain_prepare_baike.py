@@ -12,7 +12,7 @@ import sys
 import time
 
 sys.path.extend(['.', '..'])
-from utils.utils import DropDatasetDuplicate, NON_CHAR
+from utils.utils import get_doc_mini_hash
 
 def read_baike_json(buffer_siez: int=10240, max_len=512) -> list[str]:
 
@@ -75,31 +75,6 @@ def read_baike_json(buffer_siez: int=10240, max_len=512) -> list[str]:
 
         if not baike_texts:
             yield baike_texts
-
-def init_lock(l):
-    global lock
-    lock = l
-
-def init_data_lsh(dl):
-    global data_lsh
-    data_lsh = dl
-
-def get_doc_mini_hash(args: tuple, n_gram: int=3) -> MinHash:
-    '''
-    获取一段文本的mini hash
-    '''
-
-    index, doc, num_perm = args
-    # 删除符号
-    doc = ''.join(NON_CHAR.split(doc))
-
-    # n元组切分
-    docs = [doc[i: i + n_gram] for i in range(0, len(doc))]
-
-    mini_hash = MinHash(num_perm=num_perm)
-    for s in docs:
-        mini_hash.update(s.encode('utf-8'))
-    return index, mini_hash
 
 
 if __name__ == '__main__':
@@ -176,8 +151,5 @@ if __name__ == '__main__':
     #     lst = list(duplicate_set)
     #     lst.sort()
     #     ujson.dump(lst, f, ensure_ascii=False, indent=4)
-    
-
-    
 
     

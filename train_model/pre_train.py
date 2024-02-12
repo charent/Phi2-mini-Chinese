@@ -2,6 +2,7 @@ import os, platform, time, sys
 from typing import Optional
 
 import torch
+from torch.utils.data import Sampler, SequentialSampler
 
 from transformers import PreTrainedTokenizerFast, DataCollatorForLanguageModeling,Trainer, TrainingArguments, PhiForCausalLM, PhiConfig
 from datasets import load_dataset, Dataset
@@ -52,8 +53,17 @@ def get_maped_dataset(files: str|list[str], map_fun_args: dict) -> Dataset:
     获取数据集，请根据自己机器的性能更改 num_proc 的数量，以加快处理速度
     '''
     dataset = load_dataset(path='parquet', data_files=files, split='train', cache_dir='.cache')
+    print(f'pretrain dataset doc size: {len(dataset)}, it will auto merge for efficiently training, the size will smaller then your provided.')
+
     maped_dataset = dataset.map(token_to_id, batched=True, batch_size=2_0000, fn_kwargs=map_fun_args, remove_columns=dataset.column_names, num_proc=8)
     return maped_dataset
+
+
+class PreTrainTrainer(Trainer):
+
+    # 预训练不需要打乱顺序
+    def _get_train_sampler(self) -> Optional[Sampler]:
+        return SequentialSampler(self.train_dataset)
 
 
 def pre_train(config: MyTrainArugment):
@@ -150,7 +160,7 @@ def pre_train(config: MyTrainArugment):
         # deepspeed='./ds_config_one_gpu.json',
     )
 
-    trainer = Trainer(
+    trainer = PreTrainTrainer(
         model=model,
         tokenizer=tokenizer,
         args=args,
@@ -181,8 +191,3 @@ def pre_train(config: MyTrainArugment):
     if not os.path.exists(config.logs_dir):
         os.mkdir(config.logs_dir)
     loss_log.to_csv(f"{config.logs_dir}/pre_train_log_{time.strftime('%Y%m%d-%H%M')}.csv")
-
-    
-
-if __name__ == '__main__':
-    pre_train()
