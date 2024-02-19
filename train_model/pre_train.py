@@ -7,8 +7,8 @@ from torch.utils.data import Sampler, SequentialSampler
 from transformers import PreTrainedTokenizerFast, DataCollatorForLanguageModeling,Trainer, TrainingArguments, PhiForCausalLM, PhiConfig
 from datasets import load_dataset, Dataset
 import pandas as pd
-
 import numpy as np
+
 from utils.utils import MyTrainerCallback
 from config import MyTrainArugment
 
@@ -65,6 +65,54 @@ class PreTrainTrainer(Trainer):
     def _get_train_sampler(self) -> Optional[Sampler]:
         return SequentialSampler(self.train_dataset)
 
+def create_efficiency_mask(input_ids: np.array, eos_token_id: int) -> np.array:
+    '''
+    input_ids: np.array[int]
+    return: np.array[np.array[int]]
+
+    将多个短文本doc合并为超长文本后，需要mask其他不属于自己的doc。
+
+    根据eos token_id所在的位置屏蔽左下三角矩阵（置零）,只关注自己的doc，屏蔽其他doc
+    如:
+    input_ids = [2,3,4,5,1,2,3,1], 1为eos id，其他为正常token id
+
+      [[1, 0, 0, 0, 0, 0, 0, 0],
+       [1, 1, 0, 0, 0, 0, 0, 0],
+       [1, 1, 1, 0, 0, 0, 0, 0],
+       [1, 1, 1, 1, 0, 0, 0, 0],
+       [1, 1, 1, 1, 1, 0, 0, 0],
+       [0, 0, 0, 0, 0, 1, 0, 0],
+       [0, 0, 0, 0, 0, 1, 1, 0],
+       [0, 0, 0, 0, 0, 1, 1, 1]]
+
+    '''
+    n = len(input_ids)
+    idxs = np.where(input_ids == eos_token_id)[0]
+    tri_mask = np.tril([[1] * n for _ in range(n)])
+    
+    start = 0
+    for idx in idxs:
+        tri_mask[idx + 1: , start: idx + 1] = 0
+        start = idx
+    
+    return tri_mask
+
+class MyDataCollatorForLanguageModeling(DataCollatorForLanguageModeling):
+
+    def __call__(self, features, return_tensors=None):
+        
+        # 创建mask，同一行可能合并的多个doc，只关注自己所在doc，屏蔽其他doc
+        eos_token_id = self.tokenizer.eos_token_id
+        for item in features:
+            item['attention_mask'] = create_efficiency_mask(np.array(item['input_ids']), eos_token_id)
+      
+        ret = super().__call__(features, return_tensors)
+        
+        attention_mask = ret['attention_mask'] # shape: [batch_size, q_len, kv_len], decoder-only模型，self-attention, q_len = kv_len = max_len
+        
+        ret['attention_mask'] = torch.unsqueeze(attention_mask, dim = 1) # shape: [batch_size, 1, q_len, kv_len]
+
+        return  ret
 
 def pre_train(config: MyTrainArugment):
 
@@ -102,7 +150,7 @@ def pre_train(config: MyTrainArugment):
 
     # # 2. 定义data_collator
     # `mlm=False`表示要训练CLM模型，`mlm=True`表示要训练MLM模型
-    data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
+    data_collator = MyDataCollatorForLanguageModeling(tokenizer, mlm=False)
 
     # 如果配置了flash_attention_2，请手动设置set_default_dtype为float16
     #  Flash Attention 2.0 only supports torch.float16 and torch.bfloat16 dtypes.
