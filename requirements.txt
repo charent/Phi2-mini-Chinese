@@ -3,6 +3,7 @@ datasets>=2.15.0
 datasketch>=1.6.4
 evaluate>=0.4.1
 langchain>=0.10
+loguru
 nltk>=3.8.1
 numpy>=1.26.2
 pandas>=2.1.4

@@ -1,36 +1,36 @@
-from transformers import HfArgumentParser
+from transformers import HfArgumentParser, TrainingArguments
 import ujson
 
-from utils.logger import Logger
-from config import MyTrainArugment
+from loguru import logger
+from config import CustomArugments
 
 
-def get_argumets(arg_parser) -> MyTrainArugment:
-
-    return arg_parser.parse_args_into_dataclasses()[0]
+def get_argumets() -> tuple[CustomArugments, TrainingArguments]:
+    arg_parser = HfArgumentParser(dataclass_types=(CustomArugments, TrainingArguments))
+    return arg_parser.parse_args_into_dataclasses()
     
 
 if __name__ == '__main__':
 
-    arg_parser = HfArgumentParser(MyTrainArugment)
-    train_args: MyTrainArugment = get_argumets(arg_parser)
+    cust_args: CustomArugments
+    train_args: TrainingArguments
+    cust_args, train_args = get_argumets()
 
-    log = Logger('train_agrs', save2file=True)
-    log.info(ujson.dumps(train_args.__dict__, ensure_ascii=False, indent=4), std_out=True, save_to_file=True)
-    
+    logger.info(cust_args.__dict__)
+ 
     # 预训练、sft、dpo入口
-    match train_args.train_type:
+    match cust_args.train_type:
         case 'pre':
             from train_model.pre_train import pre_train
-            pre_train(train_args)
+            pre_train(cust_args=cust_args, train_args=train_args)
 
         case 'sft':
             from train_model.sft import sft_train
-            sft_train(train_args)
+            sft_train(cust_args=cust_args, train_args=train_args)
 
         case 'dpo':
             from train_model.dpo import dpo_train
-            dpo_train(train_args)
+            dpo_train(cust_args=cust_args, train_args=train_args)
 
         case _:
             raise ValueError(f'args `train_type` must be in (`pre`, `sft`, `dpo`), but got `{train_args.train_type}`')

@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 from utils.utils import MyTrainerCallback
-from config import MyTrainArugment
+from config import CustomArugments
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
@@ -114,12 +114,12 @@ class MyDataCollatorForLanguageModeling(DataCollatorForLanguageModeling):
 
         return  ret
 
-def pre_train(config: MyTrainArugment):
+def pre_train(cust_args: CustomArugments, train_args: TrainingArguments) -> None:
 
     # # 0. 加载训练好的tokenizer
     # 如果你使用的`add_tokens`方法添加了自己的token，必须要用`len(tokenizer)`获取长度，`tokenizer.vocab_size`统计不包含你添加的字符。
 
-    tokenizer = PreTrainedTokenizerFast.from_pretrained(config.tokenizer_dir)
+    tokenizer = PreTrainedTokenizerFast.from_pretrained(cust_args.tokenizer_dir)
 
     # # 1. 定义模型
     # 从`config`定义，不是`from_pretrained`。 
@@ -137,12 +137,12 @@ def pre_train(config: MyTrainArugment):
     map_fun_args = {
         'tokenizer': tokenizer,
         'map_dtype': map_dtype,
-        'max_len': config.max_len,
+        'max_len': cust_args.max_seq_len,
     }
 
-    train_dataset = get_maped_dataset(config.train_files, map_fun_args)
-    if config.eval_file is not None:
-        eval_dataset = get_maped_dataset(config.eval_file, map_fun_args)
+    train_dataset = get_maped_dataset(cust_args.train_files, map_fun_args)
+    if cust_args.eval_file is not None:
+        eval_dataset = get_maped_dataset(cust_args.eval_file, map_fun_args)
     else:
         eval_dataset = None
 
@@ -184,59 +184,33 @@ def pre_train(config: MyTrainArugment):
     # # 3. cuda cache回调函数
     # my_trainer_callback = MyTrainerCallback()
 
-    # # 4. 定义训练参数
-    args = TrainingArguments(
-        output_dir = config.output_dir,
-        per_device_train_batch_size = config.per_device_train_batch_size,
-        gradient_accumulation_steps = config.gradient_accumulation_steps,
-        num_train_epochs = config.num_train_epochs, 
-        weight_decay = config.weight_decay,
-        warmup_steps = config.warmup_steps,
-        learning_rate = config.learning_rate,
-        evaluation_strategy = config.evaluation_strategy,
-        eval_steps = config.eval_steps,
-        save_steps = config.save_steps,
-        save_strategy = config.save_strategy,
-        save_total_limit = config.save_total_limit,
-        report_to = config.report_to,
-        optim = config.optim,
-        bf16 = config.bf16,
-        fp16 = config.fp16,
-        logging_steps = config.logging_steps,
-        log_level = config.log_level,
-        logging_first_step = config.logging_first_step,
-        # group_by_length= config.group_by_length,
-        # deepspeed='./ds_config_one_gpu.json',
-    )
-
     trainer = PreTrainTrainer(
         model=model,
         tokenizer=tokenizer,
-        args=args,
+        args=train_args,
         data_collator=data_collator,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         # callbacks=[my_trainer_callback],
     )
 
-    # 5. 开始训练
+    # 4. 开始训练
     # `resume_from_checkpoint=True`参数可以从上次保存的检查点继续训练
-
     trainer.train(
-        resume_from_checkpoint=config.resume_from_checkpoint,
+        resume_from_checkpoint=train_args.resume_from_checkpoint,
     )
 
-    # 6. 保存模型
-    trainer.save_model(config.output_dir)
+    # 5. 保存模型
+    trainer.save_model(train_args.output_dir)
 
     if not eval_dataset:
         #  计算困惑度Perplexity 
         eval_results = trainer.evaluate()
         print(f"Perplexity: {np.exp(eval_results['eval_loss']):.2f}")
 
-    # # 7. 最后保存训练的loss日志和模型
+    # 6. 最后保存训练的loss日志和模型
     loss_log = pd.DataFrame(trainer.state.log_history)
 
-    if not os.path.exists(config.logs_dir):
-        os.mkdir(config.logs_dir)
-    loss_log.to_csv(f"{config.logs_dir}/pre_train_log_{time.strftime('%Y%m%d-%H%M')}.csv")
+    if not os.path.exists(cust_args.logs_dir):
+        os.mkdir(cust_args.logs_dir)
+    loss_log.to_csv(f"{cust_args.logs_dir}/pre_train_log_{time.strftime('%Y%m%d-%H%M')}.csv")
