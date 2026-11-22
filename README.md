@@ -8,6 +8,16 @@
 
 - 支持flash attention 2 加速
 
+## 环境安装（uv）
+
+依赖统一由 `pyproject.toml` + `uv.lock` 管理，不会污染系统 Python：
+```shell
+uv sync                    # 仅推理/web demo 依赖（torch cu124、transformers、gradio）
+uv sync --extra train      # 预训练/SFT/DPO 依赖（datasets、trl、accelerate 等）
+uv sync --extra rag        # RAG demo 依赖（langchain、chromadb、sentence-transformers）
+uv run python web_demo.py  # 启动对话 demo
+```
+
 # 1. ⚗️数据清洗
 比如句末添加句号、繁体转简体、删除重复的标点符号（比如有些对话语料非常多`"。。。。。"`）、NFKC Unicode标准化（主要是全角转半角及网页数据的\u3000 \xa0问题）等等。   
 具体的数据清洗过程请参考项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese)。  

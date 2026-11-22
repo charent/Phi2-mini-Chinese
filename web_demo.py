@@ -1,11 +1,25 @@
+import os
 import gradio as gr
 from transformers import PhiForCausalLM, AutoTokenizer
 from transformers import  GenerationConfig, TextIteratorStreamer
 from threading import Thread
 import torch
 
-tokenizer_dir = './model_save/tokenizer/'
-model_save_dir = './model_save/dpo/'
+# 权重目录优先级：环境变量(MODEL_DIR/TOKENIZER_DIR) > 本地训练产物 > 开源发布权重
+HF_REPO_ID = 'charent/Phi2-Chinese-0.2B'
+
+
+def _pick_dir(env_key: str, candidates: list[str]) -> str:
+    if os.getenv(env_key):
+        return os.getenv(env_key)
+    for d in candidates:
+        if os.path.isdir(d):
+            return d
+    return HF_REPO_ID
+
+
+tokenizer_dir = _pick_dir('TOKENIZER_DIR', ['./model_save/tokenizer/', './model_save/Phi2-Chinese-0.2B'])
+model_save_dir = _pick_dir('MODEL_DIR', ['./model_save/dpo/', './model_save/Phi2-Chinese-0.2B'])
 max_new_tokens = 512
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -65,4 +79,5 @@ if __name__ == "__main__":
                 description="phi中文小模型对话测试",
                 examples=['你好', '感冒了要怎么办']
             )
-    demo.launch() 
+    # predict 是生成器函数，gradio 3.39+ 需要先开启队列才能流式输出
+    demo.queue().launch(server_name='127.0.0.1', server_port=7860)
