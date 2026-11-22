@@ -8,11 +8,29 @@
 
 - 支持flash attention 2 加速
 
+## 环境安装（uv）
+
+依赖统一由 `pyproject.toml` + `uv.lock` 管理，不会污染系统 Python：
+```shell
+uv sync                                     # 仅推理/web demo 依赖（torch cu124、transformers、gradio）
+uv sync --extra train                       # 预训练/SFT/DPO 依赖（datasets、trl、accelerate 等）
+uv sync --extra rag                         # RAG demo 依赖（langchain、chromadb、sentence-transformers）
+uv run python examples/web_demo.py          # 启动对话 demo
+```
+
+`scripts/` 下的训练脚本内部会 `cd` 到项目根目录，所以执行前先激活虚拟环境：
+```shell
+uv sync --extra train
+# win：.venv\Scripts\activate
+# linux/mac：source .venv/bin/activate
+```
+
 # 1. ⚗️数据清洗
 比如句末添加句号、繁体转简体、删除重复的标点符号（比如有些对话语料非常多`"。。。。。"`）、NFKC Unicode标准化（主要是全角转半角及网页数据的\u3000 \xa0问题）等等。   
 具体的数据清洗过程请参考项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese)。  
 ```bash
-python dataset_prepare/drop_duplicate.py
+# 按文本相似度去重，输入/输出都是一列 `text` 的 parquet
+uv run python dataset_prepare/drop_duplicate.py ./data/train.parquet ./data/train_no_duplicate.parquet
 ```
 
 # 2. 🗨️tokenizer训练 
@@ -28,7 +46,7 @@ tokenizer训练非常吃内存：
 
 所以大数据集时（GB级别），建议训练`tokenizer`时从数据集中进行采样。  
 ```bash
-# 代码见 train_tokenizer/tokeinzer.ipynb
+# 代码见 train_tokeinzer/tokeinzer.ipynb
 ```
 
 # 3. ⛏️CLM因果模型预训练 
@@ -150,7 +168,7 @@ print(outs)
 ```
 
 ## 6.2 检索式生成（RAG）
-具体代码见`rag_with_langchain.ipynb`
+具体代码见`examples/rag_with_langchain.ipynb`
 
 ![rag](./imgs/rag.png)
 

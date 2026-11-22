@@ -45,7 +45,7 @@ def get_dataset(file: str, map_fun_args: dict) -> Dataset:
 def dpo_train(cust_args: CustomArugments, train_args: TrainingArguments) -> None:
 
     # 0. 加载tokenizer
-    tokenizer = PreTrainedTokenizerFast.from_pretrained(cust_args.pretrain_model_dir)
+    tokenizer = PreTrainedTokenizerFast.from_pretrained(cust_args.tokenizer_dir or cust_args.train_from_model_dir)
     print(f"vicab size: {len(tokenizer)}")
 
     # 1. 加载数据集
@@ -61,8 +61,8 @@ def dpo_train(cust_args: CustomArugments, train_args: TrainingArguments) -> None
     # 2. 加载模型
     # `model`和`model_ref`开始时是同一个模型，只训练`model`的参数，`model_ref`参数保存不变
 
-    model = PhiForCausalLM.from_pretrained(cust_args.pretrain_model_dir)
-    model_ref = PhiForCausalLM.from_pretrained(cust_args.pretrain_model_dir)
+    model = PhiForCausalLM.from_pretrained(cust_args.train_from_model_dir)
+    model_ref = PhiForCausalLM.from_pretrained(cust_args.train_from_model_dir)
 
     model_size = sum(t.numel() for t in model.parameters())
     print(f"Phi-2 size: {model_size / 1000**2:.1f}M parameters")

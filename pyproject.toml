@@ -1,0 +1,67 @@
+[project]
+name = "phi2-mini-chinese"
+version = "0.1.0"
+description = "Phi2-Chinese-0.2B: train a small Chinese Phi2 model from scratch"
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+license = { text = "Apache-2.0" }
+
+# 仅推理/对话 demo 所需依赖（uv sync 默认安装）
+dependencies = [
+    "torch==2.4.1",
+    # 发布权重基于 4.36.2 训练（Phi 使用 fused QKV），4.37+ 会拆分为 q/k/v 导致权重不匹配
+    "transformers==4.36.2",
+    "tokenizers>=0.15.0,<0.16",
+    "safetensors>=0.4.2",
+    "huggingface-hub>=0.20.3,<0.21",
+    "gradio==3.50.2",
+    # gradio 3.50.2 依赖旧版 starlette 的 TemplateResponse 位置参数签名，不能升级
+    "fastapi==0.109.2",
+    "starlette==0.36.3",
+    "uvicorn==0.27.1",
+    "pydantic==2.6.4",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+# 数据清洗 / 预训练 / SFT / DPO 所需（uv sync --extra train）
+train = [
+    # 0.29+ 会从 huggingface_hub 导入 split_torch_state_dict_into_shards，
+    # 而 transformers 4.36.2 要求 huggingface_hub<0.21，故锁在 0.28
+    "accelerate>=0.26.1,<0.29",
+    "datasets>=2.15.0",
+    "evaluate>=0.4.1",
+    "numpy>=1.26.2,<2",
+    "pandas>=2.1.4",
+    # pyarrow 21+ 要求 numpy>=2，与 torch 2.4 需要的 numpy<2 冲突，锁在 16.x
+    "pyarrow>=14.0.1,<17",
+    # 0.7.7 起稳定提供 DataCollatorForCompletionOnlyLM
+    "trl>=0.7.7,<0.9",
+    "datasketch>=1.6.4",
+    "nltk>=3.8.1",
+    "tensorboardX>=2.6.2",
+    "ujson>=5.8.0",
+    "tqdm>=4.66.1",
+    "loguru>=0.7.2",
+    "colorlog>=6.8.2",
+    # 训练脚本使用 --optim "lion_32bit"
+    "lion-pytorch>=0.1.3",
+]
+# RAG demo 所需（uv sync --extra rag）
+rag = [
+    "langchain>=0.1.0,<0.2",
+    "langchain-community>=0.0.20,<0.1",
+    "chromadb>=0.4.22,<0.5",
+    "sentence-transformers>=2.2.2",
+    "pandas>=2.1.4",
+]
+
+[tool.uv]
+# CUDA 12.4 版本的 PyTorch 轮子（RTX 40 系可用），避免安装到 CPU-only 版本
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu124" }

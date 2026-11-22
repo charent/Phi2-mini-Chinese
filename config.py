@@ -10,7 +10,8 @@ class CustomArugments:
     # 从['pre', 'sft', 'dpo']中选择一个，分别表示要进行预训练、sft微调、dpo优化
     train_type: str = field(default=None)
 
-    pretrain_model_dir: str = field(default=None)
+    # sft/dpo 训练时，从哪个模型目录开始训练（预训练产物或上一阶段检查点）
+    train_from_model_dir: str = field(default=None)
 
     # 训练数据集文件，可以有多个，文件只需要一个`txet`字段
     train_files: list[str] = field(default=None)
