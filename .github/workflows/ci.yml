@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # 注：torch 走 cu124 源，CI 上会下载较大的 wheel；由 setup-uv 的缓存缓解
+      - name: 安装依赖
+        run: uv sync --extra train
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Pyright（目标 0 error）
+        run: uv run pyright
+
+      - name: Pytest（不含 slow/gpu 用例）
+        run: uv run pytest -m "not slow and not gpu" --cov=phi2_mini --cov-report=term-missing

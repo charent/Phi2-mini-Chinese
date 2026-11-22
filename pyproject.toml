@@ -1,6 +1,10 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "phi2-mini-chinese"
-version = "0.1.0"
+version = "0.2.0"
 description = "Phi2-Chinese-0.2B: train a small Chinese Phi2 model from scratch"
 readme = "README.md"
 requires-python = ">=3.10,<3.12"
@@ -21,7 +25,13 @@ dependencies = [
     "uvicorn==0.27.1",
     "pydantic==2.6.4",
     "rich>=13.7.0",
+    # 命令行/训练日志着色（phi2_mini.logging_utils 依赖）
+    "colorlog>=6.8.2",
 ]
+
+# 命令行入口：python -m phi2_mini 与 phi2-mini 等价
+[project.scripts]
+phi2-mini = "phi2_mini.cli:main"
 
 [project.optional-dependencies]
 # 数据清洗 / 预训练 / SFT / DPO 所需（uv sync --extra train）
@@ -29,7 +39,7 @@ train = [
     # 0.29+ 会从 huggingface_hub 导入 split_torch_state_dict_into_shards，
     # 而 transformers 4.36.2 要求 huggingface_hub<0.21，故锁在 0.28
     "accelerate>=0.26.1,<0.29",
-    "datasets>=2.15.0",
+    "datasets>=2.15.0,<3",
     "evaluate>=0.4.1",
     "numpy>=1.26.2,<2",
     "pandas>=2.1.4",
@@ -42,8 +52,6 @@ train = [
     "tensorboardX>=2.6.2",
     "ujson>=5.8.0",
     "tqdm>=4.66.1",
-    "loguru>=0.7.2",
-    "colorlog>=6.8.2",
     # 训练脚本使用 --optim "lion_32bit"
     "lion-pytorch>=0.1.3",
 ]
@@ -56,6 +64,16 @@ rag = [
     "pandas>=2.1.4",
 ]
 
+# 开发/CI 依赖（PEP 735，uv 默认安装）：uv sync
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "pyright>=1.1.380",
+    "pre-commit>=3.7",
+]
+
 [tool.uv]
 # CUDA 12.4 版本的 PyTorch 轮子（RTX 40 系可用），避免安装到 CPU-only 版本
 [[tool.uv.index]]
@@ -65,3 +83,65 @@ explicit = true
 
 [tool.uv.sources]
 torch = { index = "pytorch-cu124" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/phi2_mini"]
+
+# ---------------------------------------------------------------- ruff
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["src", "tests"]
+extend-exclude = ["notebooks", "data", "model_save", "logs", ".cache", "imgs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+# 中文注释/文档里出现全角标点是正常的，不做「易混淆字符」检查
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["phi2_mini"]
+
+[tool.ruff.lint.per-file-ignores]
+# 数据准备脚本需要就地调整 logger / 复用 tqdm 进度，忽略部分风格规则
+"src/phi2_mini/data/prepare/*.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "slow: 运行时间较长（数秒以上）的测试",
+    "gpu: 需要 CUDA 设备的测试",
+]
+
+# ---------------------------------------------------------------- coverage
+[tool.coverage.run]
+source = ["phi2_mini"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+# ---------------------------------------------------------------- pyright
+# 目标：uv run pyright 0 error
+[tool.pyright]
+include = ["src", "tests"]
+exclude = ["notebooks", "data", "model_save", "logs", ".cache", "**/__pycache__"]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+venvPath = "."
+venv = ".venv"
+# gradio 等仅推理/demo 需要的包不一定装在当前环境里；缺失依赖只告警，不算 error
+reportMissingImports = "warning"
+reportMissingTypeStubs = false

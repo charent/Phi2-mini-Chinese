@@ -18,11 +18,36 @@ uv sync --extra rag                         # RAG demo 依赖（langchain、chro
 uv run python examples/web_demo.py          # 启动对话 demo
 ```
 
-`scripts/` 下的训练脚本内部会 `cd` 到项目根目录，所以执行前先激活虚拟环境：
+`scripts/` 下的训练脚本不再 `cd`，**请在仓库根目录执行**（脚本内部统一用 `uv run python -m phi2_mini`）：
+
 ```shell
-uv sync --extra train
-# win：.venv\Scripts\activate
-# linux/mac：source .venv/bin/activate
+bash scripts/pretrain.sh          # linux / mac
+scripts\pretrain.bat              # windows
+```
+
+代码检查与测试（提交前必须全绿，详见 `AGENTS.md`）：
+
+```shell
+uv run ruff format .              # 格式化
+uv run ruff check --fix .         # lint 自动修复
+uv run pyright                    # 类型检查，目标 0 error
+uv run pytest -m "not slow and not gpu"   # 单元 + 集成测试
+uv run pytest -m slow             # 冒烟：微型模型跑 1 step
+```
+
+### 目录结构
+
+```
+src/phi2_mini/        核心代码（data / modeling / train / inference）
+  ├── cli.py          命令行入口（python -m phi2_mini）
+  ├── config.py       自定义训练参数 TrainConfig
+  ├── paths.py        统一的项目路径（不依赖当前工作目录）
+  └── data/prepare/   数据清洗、去重等可执行脚本
+configs/              训练超参 / accelerate 配置
+scripts/              训练命令包装（bash / bat）
+notebooks/            tokenizer 训练、C-Eval、chat/RAG demo
+tests/                unit / integration 测试
+data/ model_save/ logs/   数据、模型、日志产物（gitignore）
 ```
 
 # 1. ⚗️数据清洗
@@ -30,7 +55,10 @@ uv sync --extra train
 具体的数据清洗过程请参考项目[ChatLM-mini-Chinese](https://github.com/charent/ChatLM-mini-Chinese)。  
 ```bash
 # 按文本相似度去重，输入/输出都是一列 `text` 的 parquet
-uv run python dataset_prepare/drop_duplicate.py ./data/train.parquet ./data/train_no_duplicate.parquet
+uv run python -m phi2_mini.data.prepare.drop_duplicate ./data/train.parquet ./data/train_no_duplicate.parquet
+
+# 清洗 + 去重 百度百科 / wikipedia 原始 json，输出 parquet
+uv run python -m phi2_mini.data.prepare.wiki_baike --source wiki --input ./data/wiki-zh/wikipedia-cn-20230720-filtered.json --output ./data/wiki_25w.parquet
 ```
 
 # 2. 🗨️tokenizer训练 
@@ -46,7 +74,7 @@ tokenizer训练非常吃内存：
 
 所以大数据集时（GB级别），建议训练`tokenizer`时从数据集中进行采样。  
 ```bash
-# 代码见 train_tokeinzer/tokeinzer.ipynb
+# 代码见 notebooks/tokenizer.ipynb
 ```
 
 # 3. ⛏️CLM因果模型预训练 
@@ -59,14 +87,13 @@ CLM预训练过程中，模型输入和输出是一样的，计算交叉熵损�
 
 处理百科语料时，建议在每个词条结束后加上`'[EOS]'`标记。其他语料处理也类似，一个`doc`的结束（可以时一篇文章结束或者段落结束）都要加上`'[EOS]'`标记。开始标记`'[BOS]'`可加可不加。
 ```bash
-# 请根据自己的情况编辑脚本参数
-cd scripts
+# 请根据自己的情况编辑脚本参数，并在仓库根目录执行
 
 # win
-pretrain.bat
+scripts\pretrain.bat
 
 # linux
-pretrain.sh
+bash scripts/pretrain.sh
 ```
 
 
@@ -82,14 +109,13 @@ text = f"##提问:\n{example['instruction']}\n##回答:\n{example['output'][EOS]
 
 记得添加`EOS`句子结束特殊标记，否则模型`decode`的时候不知道要什么时候停下来。`BOS`句子开始标记可填可不填。
 ```bash
-# 请根据自己的情况编辑脚本参数
-cd scripts
+# 请根据自己的情况编辑脚本参数，并在仓库根目录执行
 
 # win
-sft_train.bat
+scripts\sft_train.bat
 
 # linux
-sft_train.sh
+bash scripts/sft_train.sh
 ```
 
 
@@ -101,14 +127,13 @@ sft_train.sh
 
 DPO过程中要有两个模型，一个是要训练的模型，一个是参考的模型，在加载的时候其实是同一个模型，只不过参考模型不参与参数更新。  
 ```bash
-# 请根据自己的情况编辑脚本参数
-cd scripts
+# 请根据自己的情况编辑脚本参数，并在仓库根目录执行
 
 # win
-dpo_train.bat
+scripts\dpo_train.bat
 
 # linux
-dpo_train.sh
+bash scripts/dpo_train.sh
 ```
 
 
@@ -168,7 +193,7 @@ print(outs)
 ```
 
 ## 6.2 检索式生成（RAG）
-具体代码见`examples/rag_with_langchain.ipynb`
+具体代码见`notebooks/rag_with_langchain.ipynb`
 
 ![rag](./imgs/rag.png)
 

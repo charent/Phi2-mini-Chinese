@@ -1,13 +1,15 @@
-#!/usr/bin/bash
-cd ..
-accelerate launch \
-    --config_file accelerate_one_gpu.yaml \
-    train_main.py \
+#!/usr/bin/env bash
+# SFT 微调：在仓库根目录执行 `bash scripts/sft_train.sh`
+set -euo pipefail
+
+uv run accelerate launch \
+    --config_file configs/accelerate_one_gpu.yaml \
+    -m phi2_mini \
     --train_type sft \
-    --train_files ./data/sft_train_data.parquet \
-    --output_dir ./model_save/sft \
-    --tokenizer_dir ./model_save/tokenizer \
-    --train_from_model_dir ./model_save/pre/checkpoint-10 \
+    --train_files data/sft_train_data.parquet \
+    --output_dir model_save/sft \
+    --tokenizer_dir model_save/tokenizer \
+    --train_from_model_dir model_save/pre/checkpoint-10 \
     --bf16 true \
     --fp16 false \
     --eval_steps 2000 \
@@ -25,4 +27,5 @@ accelerate launch \
     --save_total_limit 10 \
     --warmup_steps 2000 \
     --weight_decay 0.1 \
-    --per_device_train_batch_size 4 
+    --per_device_train_batch_size 4 \
+    "$@"

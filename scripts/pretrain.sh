@@ -1,12 +1,15 @@
-#!/usr/bin/bash
-cd ..
-accelerate launch \
-    --config_file accelerate_one_gpu.yaml \
-    train_main.py \
+#!/usr/bin/env bash
+# 预训练：在仓库根目录执行 `bash scripts/pretrain.sh`
+# 重构后不再 `cd ..`，请先 `uv sync --extra train`；额外参数可直接追加在后面。
+set -euo pipefail
+
+uv run accelerate launch \
+    --config_file configs/accelerate_one_gpu.yaml \
+    -m phi2_mini \
     --train_type pre \
-    --train_files ./data/baike_no_duplicate.parquet \
-    --output_dir ./model_save/pre \
-    --tokenizer_dir ./model_save/tokenizer \
+    --train_files data/baike_no_duplicate.parquet \
+    --output_dir model_save/pre \
+    --tokenizer_dir model_save/tokenizer \
     --bf16 true \
     --fp16 false \
     --eval_steps 2000 \
@@ -24,7 +27,5 @@ accelerate launch \
     --save_total_limit 10 \
     --warmup_steps 2000 \
     --weight_decay 0.1 \
-    --per_device_train_batch_size 4 
-
-
-
+    --per_device_train_batch_size 4 \
+    "$@"
